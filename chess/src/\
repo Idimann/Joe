@@ -1,0 +1,9 @@
+pub type Square = Int
+
+pub fn is_valid(s: Square) -> Bool {
+  s >= 0 && s < 64
+}
+
+pub fn mirror(s: Square) -> Square {
+
+}

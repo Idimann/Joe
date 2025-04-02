@@ -206,3 +206,18 @@ pub fn format(b: Board) -> String {
   iterate_collect(b, "", fn(_, s) { "|" <> int.to_string(s) <> "| " })
   |> string.join("")
 }
+
+pub fn mirror(b: Board) -> Board {
+  let assert <<
+    r0:size(8)-bits,
+    r1:size(8)-bits,
+    r2:size(8)-bits,
+    r3:size(8)-bits,
+    r4:size(8)-bits,
+    r5:size(8)-bits,
+    r6:size(8)-bits,
+    r7:size(8)-bits,
+  >> = b
+
+  <<r7:bits, r6:bits, r5:bits, r4:bits, r3:bits, r2:bits, r1:bits, r0:bits>>
+}

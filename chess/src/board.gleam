@@ -12,6 +12,7 @@ pub type Board {
     knights: bit_board.Board,
     diags: bit_board.Board,
     lines: bit_board.Board,
+    white: Bool,
   )
 }
 
@@ -46,6 +47,7 @@ pub fn empty() -> Board {
     knights: bit_board.new(),
     diags: bit_board.new(),
     lines: bit_board.new(),
+    white: True,
   )
 }
 
@@ -69,6 +71,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: bit_board.switch_bit(b.lines, pos),
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -82,6 +85,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: bit_board.switch_bit(b.lines, pos),
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -95,6 +99,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: bit_board.switch_bit(b.knights, pos),
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -108,6 +113,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: bit_board.switch_bit(b.knights, pos),
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -121,6 +127,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: bit_board.switch_bit(b.diags, pos),
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -134,6 +141,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: bit_board.switch_bit(b.diags, pos),
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -147,6 +155,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -160,6 +169,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -173,6 +183,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: bit_board.switch_bit(b.diags, pos),
                       lines: bit_board.switch_bit(b.lines, pos),
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -186,6 +197,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: bit_board.switch_bit(b.diags, pos),
                       lines: bit_board.switch_bit(b.lines, pos),
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -199,6 +211,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -212,6 +225,7 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
                       knights: b.knights,
                       diags: b.diags,
                       lines: b.lines,
+                      white: b.white,
                     ),
                     tail,
                     pos - 1,
@@ -237,7 +251,27 @@ fn from_fen_main(b: Board, l: List(String)) -> Board {
 }
 
 fn from_fen_who(b: Board, w: String) -> Board {
-  b
+  let white = case w {
+    "w" -> True
+    "b" -> False
+    _ -> b.white
+  }
+  let rev = fn(x) {
+    case white {
+      True -> x
+      False -> bit_board.mirror(x)
+    }
+  }
+
+  Board(
+    our: rev(b.our),
+    their: rev(b.their),
+    pawns: rev(b.pawns),
+    knights: rev(b.knights),
+    diags: rev(b.diags),
+    lines: rev(b.lines),
+    white: white,
+  )
 }
 
 fn from_fen_castling(b: Board, l: List(String)) -> Board {
@@ -250,7 +284,7 @@ fn from_fen_en_passant(b: Board, s: String) -> Board {
 
 pub fn from_fen(f: String) -> option.Option(Board) {
   case string.split(f, " ") {
-    [main, who, castling, en_passant] -> {
+    [main, who, castling, en_passant, ..] -> {
       option.Some(
         empty()
         |> from_fen_main(string.split(main, ""))
@@ -283,37 +317,44 @@ pub fn pretty_print(b: Board) -> String {
       let check = fn(x) { bit_board.check_bit(x, so) }
       let piece = case check(b.pawns) {
         True -> "P"
-        False -> case check(b.knights) {
-          True -> "N"
-          False -> case check(b.diags) {
-            True -> case check(b.lines) {
-              True -> "Q"
-              False -> "B"
-            }
-            False -> case check(b.lines) {
-              True -> "R"
-              False -> " "
-            }
+        False ->
+          case check(b.knights) {
+            True -> "N"
+            False ->
+              case check(b.diags) {
+                True ->
+                  case check(b.lines) {
+                    True -> "Q"
+                    False -> "B"
+                  }
+                False ->
+                  case check(b.lines) {
+                    True -> "R"
+                    False -> " "
+                  }
+              }
           }
-        }
       }
       let who = case check(b.our) {
         True -> 1
-        False -> case check(b.their) {
-          True -> -1
-          False -> 0
-        }
+        False ->
+          case check(b.their) {
+            True -> -1
+            False -> 0
+          }
       }
 
       let str = case who {
-        1 -> case piece {
-          " " -> "K"
-          x -> x
-        }
-        -1 -> case piece {
-          " " -> "k"
-          x -> string.lowercase(x)
-        }
+        1 ->
+          case piece {
+            " " -> "K"
+            x -> x
+          }
+        -1 ->
+          case piece {
+            " " -> "k"
+            x -> string.lowercase(x)
+          }
         _ -> " "
       }
 
