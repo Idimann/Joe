@@ -161,49 +161,51 @@ pub fn without(b: Board, l: List(Board)) -> Board {
 fn r_iterate_collect(
   b: Board,
   func: fn(Board, square.Square) -> a,
-  base: a,
-  reverse: Bool,
+  base: List(a),
+  non_reversed: Bool,
   s: square.Square,
 ) -> List(a) {
   case square.is_valid(s) {
     True ->
       case check_bit(b, s) {
         True ->
-          list.prepend(
-            r_iterate_collect(b, func, base, reverse, case reverse {
+          r_iterate_collect(
+            b,
+            func,
+            list.prepend(base, func(b, s)),
+            non_reversed,
+            case non_reversed {
               True -> s - 1
               False -> s + 1
-            }),
-            func(b, s),
+            },
           )
         False ->
-          r_iterate_collect(b, func, base, reverse, case reverse {
+          r_iterate_collect(b, func, base, non_reversed, case non_reversed {
             True -> s - 1
             False -> s + 1
           })
       }
-    False -> [base]
+    False -> base
   }
 }
 
 pub fn iterate_collect(
   b: Board,
-  base: a,
   func: fn(Board, square.Square) -> a,
 ) -> List(a) {
-  r_iterate_collect(b, func, base, False, 0)
+  //I know passing in True and 63 might seem weird, but it's correct cause of tail call
+  r_iterate_collect(b, func, [], True, 63)
 }
 
 pub fn iterate_collect_reverse(
   b: Board,
-  base: a,
   func: fn(Board, square.Square) -> a,
 ) -> List(a) {
-  r_iterate_collect(b, func, base, True, 63)
+  r_iterate_collect(b, func, [], False, 0)
 }
 
 pub fn format(b: Board) -> String {
-  iterate_collect(b, "", fn(_, s) { "|" <> int.to_string(s) <> "| " })
+  iterate_collect(b, fn(_, s) { "|" <> int.to_string(s) <> "| " })
   |> string.join("")
 }
 
@@ -220,4 +222,44 @@ pub fn mirror(b: Board) -> Board {
   >> = b
 
   <<r7:bits, r6:bits, r5:bits, r4:bits, r3:bits, r2:bits, r1:bits, r0:bits>>
+}
+
+///This takes in a 1 byte bit array
+fn mirror_1d(a: BitArray) -> BitArray {
+  let assert <<
+    r0:size(1)-bits,
+    r1:size(1)-bits,
+    r2:size(1)-bits,
+    r3:size(1)-bits,
+    r4:size(1)-bits,
+    r5:size(1)-bits,
+    r6:size(1)-bits,
+    r7:size(1)-bits,
+  >> = a
+
+  <<r7:bits, r6:bits, r5:bits, r4:bits, r3:bits, r2:bits, r1:bits, r0:bits>>
+}
+
+pub fn mirror_h(b: Board) -> Board {
+  let assert <<
+    r0:size(8)-bits,
+    r1:size(8)-bits,
+    r2:size(8)-bits,
+    r3:size(8)-bits,
+    r4:size(8)-bits,
+    r5:size(8)-bits,
+    r6:size(8)-bits,
+    r7:size(8)-bits,
+  >> = b
+
+  <<
+    mirror_1d(r0):bits,
+    mirror_1d(r1):bits,
+    mirror_1d(r2):bits,
+    mirror_1d(r3):bits,
+    mirror_1d(r4):bits,
+    mirror_1d(r5):bits,
+    mirror_1d(r6):bits,
+    mirror_1d(r7):bits,
+  >>
 }
