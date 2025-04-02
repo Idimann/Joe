@@ -1,6 +1,8 @@
 import gleam/bit_array
-import gleam/option
+import gleam/int
 import gleam/list
+import gleam/option
+import gleam/string
 import square
 
 pub type Board =
@@ -104,7 +106,7 @@ fn r_and(b: Board, list: List(Board)) -> Board {
     [] -> b
     [head, ..tail] ->
       r_and(
-        iterate(b, fn(bo: Board, sq: square.Square) {
+        iterate(b, fn(bo, sq) {
           case check_bit(head, sq) {
             True -> bo
             False -> assign_bit(bo, sq, 0)
@@ -120,7 +122,7 @@ fn r_or(b: Board, list: List(Board)) -> Board {
     [] -> b
     [head, ..tail] ->
       r_or(
-        iterate(new_filled(), fn(bo: Board, so: square.Square) {
+        iterate(new_filled(), fn(bo, so) {
           assign_bit(bo, so, case check_bit(b, so) || check_bit(head, so) {
             True -> 1
             False -> 0
@@ -140,7 +142,7 @@ pub fn or(list: List(Board)) -> Board {
 }
 
 pub fn neg(b: Board) -> Board {
-  iterate(new_filled(), fn(bo: Board, so: square.Square) {
+  iterate(new_filled(), fn(bo, so) {
     assign_bit(bo, so, case check_bit(b, so) {
       True -> 0
       False -> 1
@@ -154,4 +156,34 @@ pub fn without(b: Board, l: List(Board)) -> Board {
   |> fn(e) { list.prepend([], e) }
   |> list.prepend(b)
   |> and()
+}
+
+fn r_iterate_collect(
+  b: Board,
+  func: fn(Board, square.Square) -> a,
+  base: a,
+  s: square.Square,
+) -> List(a) {
+  case square.is_valid(s) {
+    True ->
+      case check_bit(b, s) {
+        True ->
+          list.prepend(r_iterate_collect(b, func, base, s + 1), func(b, s))
+        False -> r_iterate_collect(b, func, base, s + 1)
+      }
+    False -> [base]
+  }
+}
+
+pub fn iterate_collect(
+  b: Board,
+  func: fn(Board, square.Square) -> a,
+  base: a,
+) -> List(a) {
+  r_iterate_collect(b, func, base, 0)
+}
+
+pub fn format(b: Board) -> String {
+  iterate_collect(b, fn(_, s) { "|" <> int.to_string(s) <> "| " }, "")
+  |> string.join("")
 }

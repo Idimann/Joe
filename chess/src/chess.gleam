@@ -1,20 +1,10 @@
-import bit_board
+import board
+import gleam/io
+import gleam/option
 
 pub fn main() {
-  let bb =
-    bit_board.new()
-    |> bit_board.switch_bit(0)
-    |> bit_board.switch_bit(8)
-    |> bit_board.switch_bit(16)
-    |> bit_board.switch_bit(24)
+  let assert option.Some(bb) =
+    board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -")
 
-  let b0 =
-    bit_board.new()
-    |> bit_board.switch_bit(0)
-
-  let b8 =
-    bit_board.new()
-    |> bit_board.switch_bit(8)
-
-  echo bit_board.without(bb, [b0, b8])
+  bb |> board.format() |> io.println()
 }
