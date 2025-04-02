@@ -1,2 +1,5 @@
 chess/build/
 chess/test/
+*.beam
+*.ez
+*.dump
