@@ -162,14 +162,25 @@ fn r_iterate_collect(
   b: Board,
   func: fn(Board, square.Square) -> a,
   base: a,
+  reverse: Bool,
   s: square.Square,
 ) -> List(a) {
   case square.is_valid(s) {
     True ->
       case check_bit(b, s) {
         True ->
-          list.prepend(r_iterate_collect(b, func, base, s + 1), func(b, s))
-        False -> r_iterate_collect(b, func, base, s + 1)
+          list.prepend(
+            r_iterate_collect(b, func, base, reverse, case reverse {
+              True -> s - 1
+              False -> s + 1
+            }),
+            func(b, s),
+          )
+        False ->
+          r_iterate_collect(b, func, base, reverse, case reverse {
+            True -> s - 1
+            False -> s + 1
+          })
       }
     False -> [base]
   }
@@ -177,13 +188,21 @@ fn r_iterate_collect(
 
 pub fn iterate_collect(
   b: Board,
-  func: fn(Board, square.Square) -> a,
   base: a,
+  func: fn(Board, square.Square) -> a,
 ) -> List(a) {
-  r_iterate_collect(b, func, base, 0)
+  r_iterate_collect(b, func, base, False, 0)
+}
+
+pub fn iterate_collect_reverse(
+  b: Board,
+  base: a,
+  func: fn(Board, square.Square) -> a,
+) -> List(a) {
+  r_iterate_collect(b, func, base, True, 63)
 }
 
 pub fn format(b: Board) -> String {
-  iterate_collect(b, fn(_, s) { "|" <> int.to_string(s) <> "| " }, "")
+  iterate_collect(b, "", fn(_, s) { "|" <> int.to_string(s) <> "| " })
   |> string.join("")
 }

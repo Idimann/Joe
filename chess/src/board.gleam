@@ -56,7 +56,8 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
         [] -> b
         [head, ..tail] -> {
           case head {
-            "/" -> r_from_fen_main(b, tail, pos) //{ pos / 8 } * 8)
+            "/" -> r_from_fen_main(b, tail, pos)
+            //{ pos / 8 } * 8)
             x ->
               case x {
                 "r" ->
@@ -271,5 +272,56 @@ pub fn format(b: Board) -> String {
     "Diags: " <> bit_board.format(b.diags) <> "\n\n",
     "Lines: " <> bit_board.format(b.lines),
   ]
+  |> string.join("")
+}
+
+pub fn pretty_print(b: Board) -> String {
+  bit_board.iterate_collect_reverse(
+    bit_board.new_filled(),
+    "",
+    fn(_: bit_board.Board, so: square.Square) {
+      let check = fn(x) { bit_board.check_bit(x, so) }
+      let piece = case check(b.pawns) {
+        True -> "P"
+        False -> case check(b.knights) {
+          True -> "N"
+          False -> case check(b.diags) {
+            True -> case check(b.lines) {
+              True -> "Q"
+              False -> "B"
+            }
+            False -> case check(b.lines) {
+              True -> "R"
+              False -> " "
+            }
+          }
+        }
+      }
+      let who = case check(b.our) {
+        True -> 1
+        False -> case check(b.their) {
+          True -> -1
+          False -> 0
+        }
+      }
+
+      let str = case who {
+        1 -> case piece {
+          " " -> "K"
+          x -> x
+        }
+        -1 -> case piece {
+          " " -> "k"
+          x -> string.lowercase(x)
+        }
+        _ -> " "
+      }
+
+      case 7 - so % 8 {
+        7 -> str <> "\n"
+        _ -> str
+      }
+    },
+  )
   |> string.join("")
 }
