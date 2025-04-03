@@ -17,6 +17,14 @@ pub fn mirror(s: Square) -> Square {
   { 56 - y } + x
 }
 
+pub fn mirror_h(s: Square) -> Square {
+  let x = s % 8
+  let y = s - s % 8
+
+  // 7 is correct here
+  { 7 - x } + y
+}
+
 pub fn to_string(s: Square, mir: Bool) -> String {
   let x = case mir {
     True -> 7 - { s % 8 }

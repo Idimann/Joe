@@ -290,7 +290,8 @@ fn r_from_fen_main(b: Board, l: List(String), pos: square.Square) -> Board {
 fn from_fen_main(b: Board, l: List(String)) -> Board {
   //We assume we're iterating from the white perspective here
   //If it tourns out we aren't, we just flip the board
-  r_from_fen_main(b, l, 63)
+  //We need to flip here because we are iterating backwards
+  r_from_fen_main(b, l, 63) |> mirror_h()
 }
 
 fn from_fen_who(b: Board, w: String) -> Board {
@@ -429,7 +430,7 @@ pub fn format(b: Board) -> String {
 }
 
 pub fn pretty_print(b: Board) -> String {
-  bit_board.iterate_collect_reverse(
+  bit_board.iterate_collect_linewise(
     bit_board.new_filled(),
     fn(_: bit_board.Board, so: square.Square) {
       let check = fn(x) { bit_board.check_bit(x, so) }
@@ -476,9 +477,9 @@ pub fn pretty_print(b: Board) -> String {
         _ -> " "
       }
 
-      case 7 - so % 8 {
+      case so % 8 {
         7 -> str <> "\n"
-        _ -> str
+        _ -> str <> " "
       }
     },
   )

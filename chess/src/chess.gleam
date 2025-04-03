@@ -1,22 +1,24 @@
 import board
 import gleam/io
 import gleam/option
-import square
+import move
 
 pub fn main() {
-  let assert option.Some(bb) =
-    board.from_fen("rnbqkbnr/pp1ppppp/8/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2")
+  let assert option.Some(b) =
+    board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
-  let assert option.Some(sq) = square.from_string("e4")
-  io.println(square.to_string(sq, False))
+  let bb =
+    b
+    |> move.make_apply([
+      #("e2", "e4", move.Normal),
+      #("e7", "e5", move.Normal),
+      #("g1", "f3", move.Normal),
+      #("b8", "c6", move.Normal),
+      #("f1", "b5", move.Normal),
+      #("a7", "a6", move.Normal),
+      #("e1", "g1", move.Castle),
+      #("a6", "b5", move.Normal),
+    ])
 
-  { "Normal:\n" <> bb |> board.pretty_print() } |> io.println()
-  {
-    "Mirrored:\n"
-    <> bb
-    |> board.mirror()
-    |> board.mirror_h()
-    |> board.pretty_print()
-  }
-  |> io.println()
+  bb |> board.pretty_print() |> io.println()
 }

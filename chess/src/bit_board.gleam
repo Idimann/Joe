@@ -189,10 +189,7 @@ fn r_iterate_collect(
   }
 }
 
-pub fn iterate_collect(
-  b: Board,
-  func: fn(Board, square.Square) -> a,
-) -> List(a) {
+pub fn iterate_collect(b: Board, func: fn(Board, square.Square) -> a) -> List(a) {
   //I know passing in True and 63 might seem weird, but it's correct cause of tail call
   r_iterate_collect(b, func, [], True, 63)
 }
@@ -202,6 +199,43 @@ pub fn iterate_collect_reverse(
   func: fn(Board, square.Square) -> a,
 ) -> List(a) {
   r_iterate_collect(b, func, [], False, 0)
+}
+
+fn r_iterate_collect_linewise(
+  b: Board,
+  func: fn(Board, square.Square) -> a,
+  base: List(a),
+  s: square.Square,
+) -> List(a) {
+  case square.is_valid(s) {
+    True ->
+      case check_bit(b, s) {
+        True ->
+          r_iterate_collect_linewise(
+            b,
+            func,
+            list.prepend(base, func(b, s)),
+            case s % 8 {
+              7 -> s - 15
+              _ -> s + 1
+            },
+          )
+        False ->
+          r_iterate_collect_linewise(b, func, base, case s % 8 {
+            7 -> s - 15
+            _ -> s + 1
+          })
+      }
+    False -> base
+  }
+}
+
+pub fn iterate_collect_linewise(
+  b: Board,
+  func: fn(Board, square.Square) -> a,
+) -> List(a) {
+  r_iterate_collect_linewise(b, func, [], 56)
+  |> list.reverse()
 }
 
 pub fn format(b: Board) -> String {
