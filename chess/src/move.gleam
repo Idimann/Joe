@@ -3,10 +3,18 @@ import board
 import gleam/option
 import square
 
+pub type PromType {
+  Knight
+  Bishop
+  Rook
+  Queen
+}
+
 pub type MoveType {
   Normal
   Castle
   EnPassant
+  Promotion(PromType)
 }
 
 ///The first is square is 'from', the second one is 'to'
@@ -70,13 +78,17 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
           //This is for en passant
           True ->
             b.pawns
+            //This removes previous en passants
             |> bit_board.switch_bit(from)
             |> bit_board.assign_bit(to, 1)
+            |> fn(x) { bit_board.and([x, bit_board.or([u_our, u_their])]) }
             |> case to - from {
               16 -> fn(x) { bit_board.switch_bit(x, from + 8) }
-              _ -> fn(x) { bit_board.and([x, bit_board.or([u_our, u_their])]) }
+              _ -> fn(x) { x }
             }
-          False -> bit_board.assign_bit(b.pawns, to, 0)
+          False ->
+            bit_board.assign_bit(b.pawns, to, 0)
+            |> fn(x) { bit_board.and([x, bit_board.or([u_our, u_their])]) }
         },
         knights: update(b.knights),
         diags: update(b.diags),
@@ -102,7 +114,9 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
           |> bit_board.switch_bit(from)
           |> bit_board.assign_bit(to, 1),
         their: b.their,
-        pawns: b.pawns,
+        pawns: b.pawns
+          //Removing en passant if it's there
+          |> fn(x) { bit_board.and([x, bit_board.or([b.our, b.their])]) },
         knights: b.knights,
         diags: b.diags,
         lines: update(b.lines),
@@ -132,6 +146,27 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         mirror: b.mirror,
         castling: b.castling,
       )
+    Promotion(typ) ->
+      board.Board(
+        our: b.our |> bit_board.switch_bit(from) |> bit_board.assign_bit(to, 1),
+        their: bit_board.assign_bit(b.their, to, 0),
+        pawns: bit_board.switch_bit(b.pawns, from),
+        knights: case typ {
+          Knight -> bit_board.switch_bit(b.knights, to)
+          _ -> b.knights
+        },
+        diags: case typ {
+          Bishop | Queen -> bit_board.switch_bit(b.diags, to)
+          _ -> b.diags
+        },
+        lines: case typ {
+          Rook | Queen -> bit_board.switch_bit(b.lines, to)
+          _ -> b.lines
+        },
+        white: b.white,
+        mirror: b.mirror,
+        castling: b.castling,
+      )
   })
 }
 
@@ -143,7 +178,7 @@ pub fn make_apply(
     [] -> b
     [head, ..tail] ->
       case make_mir(head.0, head.1, head.2, b) {
-        option.Some(m) -> b |> apply(m) |> make_apply(tail)
+        option.Some(m) -> b |> apply(m) |> board.mirror_h() |> make_apply(tail)
         option.None -> make_apply(b, tail)
       }
   }

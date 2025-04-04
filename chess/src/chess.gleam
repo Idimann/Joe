@@ -1,4 +1,5 @@
 import board
+import bit_board
 import gleam/io
 import gleam/option
 import move
@@ -16,9 +17,11 @@ pub fn main() {
       #("b8", "c6", move.Normal),
       #("f1", "b5", move.Normal),
       #("a7", "a6", move.Normal),
+      #("b5", "c6", move.Normal),
+      #("b7", "c6", move.Normal),
       #("e1", "g1", move.Castle),
-      #("a6", "b5", move.Normal),
     ])
 
   bb |> board.pretty_print() |> io.println()
+  bb.pawns |> bit_board.pretty_print() |> io.println()
 }

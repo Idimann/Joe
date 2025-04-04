@@ -238,6 +238,42 @@ pub fn iterate_collect_linewise(
   |> list.reverse()
 }
 
+fn r_iterate_collect_list(
+  b: Board,
+  func: fn(Board, square.Square) -> List(a),
+  base: List(a),
+  non_reversed: Bool,
+  s: square.Square,
+) -> List(a) {
+  case square.is_valid(s) {
+    True ->
+      case check_bit(b, s) {
+        True ->
+          r_iterate_collect_list(
+            b,
+            func,
+            list.append(base, func(b, s)),
+            non_reversed,
+            case non_reversed {
+              True -> s - 1
+              False -> s + 1
+            },
+          )
+        False ->
+          r_iterate_collect_list(b, func, base, non_reversed, case non_reversed {
+            True -> s - 1
+            False -> s + 1
+          })
+      }
+    False -> base
+  }
+}
+
+pub fn iterate_collect_list(b: Board, func: fn(Board, square.Square) -> List(a)) -> List(a) {
+  //I know passing in True and 63 might seem weird, but it's correct cause of tail call
+  r_iterate_collect_list(b, func, [], True, 63)
+}
+
 pub fn format(b: Board) -> String {
   iterate_collect(b, fn(_, s) { "|" <> int.to_string(s) <> "| " })
   |> string.join("")
@@ -296,4 +332,18 @@ pub fn mirror_h(b: Board) -> Board {
     mirror_1d(r6):bits,
     mirror_1d(r7):bits,
   >>
+}
+
+pub fn pretty_print(b: Board) -> String {
+  iterate_collect_linewise(new_filled(), fn(_: Board, so: square.Square) {
+    let str = case check_bit(b, so) {
+      True -> "x"
+      False -> " "
+    }
+    case so % 8 {
+      7 -> str <> "\n"
+      _ -> str <> " "
+    }
+  })
+  |> string.join("")
 }
