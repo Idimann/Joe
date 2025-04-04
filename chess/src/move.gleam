@@ -10,56 +10,68 @@ pub type PromType {
   Queen
 }
 
-pub type MoveType {
-  Normal
-  Castle
-  EnPassant
-  Promotion(PromType)
+pub type CastleType {
+  Kingside
+  Queenside
 }
 
-///The first is square is 'from', the second one is 'to'
-pub type Move =
-  #(square.Square, square.Square, MoveType)
+pub type Move {
+  ///The first is square is 'from', the second one is 'to'
+  Normal(square.Square, square.Square)
+  Castle(CastleType)
+  EnPassant(square.Square)
+  Promotion(square.Square, square.Square, PromType)
+}
 
-pub fn make(f: String, t: String, m: MoveType) -> option.Option(Move) {
+pub fn normal(f: String, t: String) -> option.Option(Move) {
   case square.from_string(f), square.from_string(t) {
-    option.Some(f), option.Some(t) -> option.Some(#(f, t, m))
+    option.Some(f), option.Some(t) -> option.Some(Normal(f, t))
     _, _ -> option.None
   }
 }
 
-pub fn make_mir(
-  f: String,
-  t: String,
-  m: MoveType,
-  b: board.Board,
-) -> option.Option(Move) {
-  case square.from_string(f), square.from_string(t) {
-    option.Some(f), option.Some(t) -> {
-      let mirror = fn(x) {
-        x
-        |> case b.white {
-          True -> fn(x) { x }
-          False -> square.mirror
-        }
-        |> case b.mirror {
-          True -> square.mirror_h
-          False -> fn(x) { x }
-        }
-      }
+pub fn en_passant(f: String) -> option.Option(Move) {
+  case square.from_string(f) {
+    option.Some(f) -> option.Some(EnPassant(f))
+    _ -> option.None
+  }
+}
 
-      option.Some(#(mirror(f), mirror(t), m))
-    }
+pub fn castle(x: CastleType) -> option.Option(Move) {
+  option.Some(Castle(x))
+}
+
+pub fn promotion(f: String, t: String, x: PromType) -> option.Option(Move) {
+  case square.from_string(f), square.from_string(t) {
+    option.Some(f), option.Some(t) -> option.Some(Promotion(f, t, x))
     _, _ -> option.None
+  }
+}
+
+pub fn make_mir(m: Move, b: board.Board) -> Move {
+  let mirror = fn(x) {
+    x
+    |> case b.white {
+      True -> fn(x) { x }
+      False -> square.mirror
+    }
+    |> case b.mirror {
+      True -> square.mirror_h
+      False -> fn(x) { x }
+    }
+  }
+
+  case m {
+    Normal(f, t) -> Normal(mirror(f), mirror(t))
+    Castle(x) -> Castle(x)
+    EnPassant(f) -> EnPassant(mirror(f))
+    Promotion(f, t, x) -> Promotion(mirror(f), mirror(t), x)
   }
 }
 
 pub fn apply(b: board.Board, m: Move) -> board.Board {
-  let from = m.0
-  let to = m.1
-
-  board.mirror(case m.2 {
-    Normal -> {
+  board.mirror(case m {
+    Normal(from, to) -> {
       let update = fn(bo) {
         case bit_board.check_bit(bo, from) {
           True ->
@@ -98,13 +110,17 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         castling: b.castling,
       )
     }
-    Castle -> {
+    Castle(typ) -> {
+      let from = 4
+      let to = case typ {
+        Kingside -> 6
+        Queenside -> 2
+      }
+
       let update = fn(x) {
-        case to {
-          //Queenside
-          2 -> bit_board.switch_bit(x, 0) |> bit_board.switch_bit(3)
-          //Kingside
-          _ -> bit_board.switch_bit(x, 7) |> bit_board.switch_bit(5)
+        case typ {
+          Kingside -> bit_board.switch_bit(x, 7) |> bit_board.switch_bit(5)
+          Queenside -> bit_board.switch_bit(x, 0) |> bit_board.switch_bit(3)
         }
       }
 
@@ -125,43 +141,49 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         castling: {
           let assert <<ok:1-bits, oq:1-bits, t:2-bits>> = b.castling
 
-          case to {
-            //Queenside
-            2 -> <<ok:bits, 0:1, t:bits>>
-            //Kingside
-            _ -> <<0:1, oq:bits, t:bits>>
+          case typ {
+            Kingside -> <<0:1, oq:bits, t:bits>>
+            Queenside -> <<ok:bits, 0:1, t:bits>>
           }
         },
       )
     }
-    EnPassant ->
-      board.Board(
-        our: b.our |> bit_board.switch_bit(from) |> bit_board.assign_bit(to, 1),
-        their: bit_board.switch_bit(b.their, to - 8),
-        pawns: bit_board.switch_bit(b.pawns, from),
-        knights: b.knights,
-        diags: b.diags,
-        lines: b.lines,
-        white: b.white,
-        mirror: b.mirror,
-        castling: b.castling,
-      )
-    Promotion(typ) ->
+    EnPassant(from) ->
+      case
+        bit_board.without(b.pawns, [b.our, b.their]) |> bit_board.get_first()
+      {
+        option.Some(to) ->
+          board.Board(
+            our: b.our
+              |> bit_board.switch_bit(from)
+              |> bit_board.assign_bit(to, 1),
+            their: bit_board.switch_bit(b.their, to - 8),
+            pawns: bit_board.switch_bit(b.pawns, from),
+            knights: b.knights,
+            diags: b.diags,
+            lines: b.lines,
+            white: b.white,
+            mirror: b.mirror,
+            castling: b.castling,
+          )
+        option.None -> b
+      }
+    Promotion(from, to, typ) ->
       board.Board(
         our: b.our |> bit_board.switch_bit(from) |> bit_board.assign_bit(to, 1),
         their: bit_board.assign_bit(b.their, to, 0),
         pawns: bit_board.switch_bit(b.pawns, from),
         knights: case typ {
           Knight -> bit_board.switch_bit(b.knights, to)
-          _ -> b.knights
+          _ -> bit_board.assign_bit(b.knights, to, 0)
         },
         diags: case typ {
           Bishop | Queen -> bit_board.switch_bit(b.diags, to)
-          _ -> b.diags
+          _ -> bit_board.assign_bit(b.diags, to, 0)
         },
         lines: case typ {
           Rook | Queen -> bit_board.switch_bit(b.lines, to)
-          _ -> b.lines
+          _ -> bit_board.assign_bit(b.lines, to, 0)
         },
         white: b.white,
         mirror: b.mirror,
@@ -170,15 +192,12 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
   })
 }
 
-pub fn make_apply(
-  b: board.Board,
-  ms: List(#(String, String, MoveType)),
-) -> board.Board {
+pub fn make_apply(b: board.Board, ms: List(option.Option(Move))) -> board.Board {
   case ms {
     [] -> b
     [head, ..tail] ->
-      case make_mir(head.0, head.1, head.2, b) {
-        option.Some(m) -> b |> apply(m) |> board.mirror_h() |> make_apply(tail)
+      case head {
+        option.Some(x) -> apply(b, make_mir(x, b)) |> board.mirror_h() |> make_apply(tail)
         option.None -> make_apply(b, tail)
       }
   }

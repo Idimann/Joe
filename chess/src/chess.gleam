@@ -11,15 +11,15 @@ pub fn main() {
   let bb =
     b
     |> move.make_apply([
-      #("e2", "e4", move.Normal),
-      #("e7", "e5", move.Normal),
-      #("g1", "f3", move.Normal),
-      #("b8", "c6", move.Normal),
-      #("f1", "b5", move.Normal),
-      #("a7", "a6", move.Normal),
-      #("b5", "c6", move.Normal),
-      #("b7", "c6", move.Normal),
-      #("e1", "g1", move.Castle),
+      move.normal("e2", "e4"),
+      move.normal("d7", "d5"),
+      move.normal("e4", "e5"),
+      move.normal("f7", "f5"),
+      move.en_passant("e5"),
+      move.normal("a7", "a6"),
+      move.normal("f6", "f7"),
+      move.normal("a6", "a5"),
+      move.promotion("f7", "g8", move.Queen),
     ])
 
   bb |> board.pretty_print() |> io.println()
