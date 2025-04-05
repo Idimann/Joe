@@ -162,11 +162,6 @@ fn make_slide(pos: Int, line: BitArray, checking: Int) -> Int {
 fn gen_sliding() -> dict.Dict(#(BitArray, BitArray), BitArray) {
   bit_line.each_array(8, fn(line) {
     bit_line.each_bit(8, fn(arr, pos) {
-      // case pos {
-      //   0 -> echo make_slide(pos, line, 5)
-      //   _ -> 0
-      // }
-
       #(#(arr, line), <<
         make_slide(pos, line, 0):1,
         make_slide(pos, line, 1):1,

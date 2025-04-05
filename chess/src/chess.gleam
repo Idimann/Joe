@@ -13,7 +13,7 @@ pub fn main() {
   let tables = tablegen.gen_tables()
 
   let assert Ok(v) =
-    dict.get(tables.sliding, #(<<1:1, 0:7>>, <<0:1, 1:3, 0:4>>))
+    dict.get(tables.sliding, #(<<0:3, 1:1, 0:4>>, <<0:1, 1:1, 0:4, 1:1, 1:1>>))
 
   bit_line.pretty(v) |> io.println()
 }
