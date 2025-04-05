@@ -260,16 +260,25 @@ fn r_iterate_collect_list(
             },
           )
         False ->
-          r_iterate_collect_list(b, func, base, non_reversed, case non_reversed {
-            True -> s - 1
-            False -> s + 1
-          })
+          r_iterate_collect_list(
+            b,
+            func,
+            base,
+            non_reversed,
+            case non_reversed {
+              True -> s - 1
+              False -> s + 1
+            },
+          )
       }
     False -> base
   }
 }
 
-pub fn iterate_collect_list(b: Board, func: fn(Board, square.Square) -> List(a)) -> List(a) {
+pub fn iterate_collect_list(
+  b: Board,
+  func: fn(Board, square.Square) -> List(a),
+) -> List(a) {
   //I know passing in True and 63 might seem weird, but it's correct cause of tail call
   r_iterate_collect_list(b, func, [], True, 63)
 }

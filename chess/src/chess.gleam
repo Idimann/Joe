@@ -1,27 +1,19 @@
 import board
-import bit_board
+import gleam/dict
 import gleam/io
 import gleam/option
-import move
+import bit_line
+import tablegen
 
 pub fn main() {
   let assert option.Some(b) =
     board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+  b |> board.pretty_print() |> io.println()
 
-  let bb =
-    b
-    |> move.make_apply([
-      move.normal("e2", "e4"),
-      move.normal("d7", "d5"),
-      move.normal("e4", "e5"),
-      move.normal("f7", "f5"),
-      move.en_passant("e5"),
-      move.normal("a7", "a6"),
-      move.normal("f6", "f7"),
-      move.normal("a6", "a5"),
-      move.promotion("f7", "g8", move.Queen),
-    ])
+  let tables = tablegen.gen_tables()
 
-  bb |> board.pretty_print() |> io.println()
-  bb.pawns |> bit_board.pretty_print() |> io.println()
+  let assert Ok(v) =
+    dict.get(tables.sliding, #(<<1:1, 0:7>>, <<0:1, 1:3, 0:4>>))
+
+  bit_line.pretty(v) |> io.println()
 }
