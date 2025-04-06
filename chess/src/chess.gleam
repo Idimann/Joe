@@ -1,5 +1,6 @@
+import board
 import gleam/io
-import bit_board
+import gleam/option
 
 // Don't continue using bit boards. They aren't the way gleam wants you to do it.
 // Use a singular board instead. It is represented by a BitArray and uses
@@ -14,5 +15,8 @@ import bit_board
 // move generation as well.
 // Tables should stay. Instead of using bit_boards, they just use squares/moves directly.
 pub fn main() {
-  io.println("hello")
+  let assert option.Some(b) =
+    board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+  board.pretty(b) |> io.println()
 }

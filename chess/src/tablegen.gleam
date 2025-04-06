@@ -18,7 +18,7 @@ pub type Tables {
     sliding: SlideTable,
   )
 }
-//
+
 // fn gen_pawns() -> Table {
 //   let new = bit_board.new()
 //
