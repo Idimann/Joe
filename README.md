@@ -7,3 +7,13 @@ Run the project using
 gleam run
 ```
 inside the **chess** directory.
+
+## Style
+- Use a lot of
+```gleam
+let assert
+```
+especially with
+```gleam
+let assert option.Some(x)
+```
