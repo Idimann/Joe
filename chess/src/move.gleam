@@ -23,6 +23,28 @@ pub type Move {
   Promotion(square.Square, square.Square, PromType)
 }
 
+pub fn to_string(m: Move, mir: Bool) -> String {
+  case m {
+    Normal(f, t) -> square.to_string(f, mir) <> square.to_string(t, mir)
+    Castle(t) ->
+      case t {
+        Kingside -> "o"
+        Queenside -> "O"
+      }
+    EnPassant(f) -> square.to_string(f, mir) <> "+"
+    Promotion(f, t, ty) ->
+      square.to_string(f, mir)
+      <> square.to_string(t, mir)
+      <> "="
+      <> case ty {
+        Knight -> "N"
+        Bishop -> "B"
+        Rook -> "R"
+        Queen -> "Q"
+      }
+  }
+}
+
 pub fn normal(f: String, t: String) -> option.Option(Move) {
   case square.from_string(f), square.from_string(t) {
     option.Some(f), option.Some(t) -> option.Some(Normal(f, t))
@@ -197,7 +219,8 @@ pub fn make_apply(b: board.Board, ms: List(option.Option(Move))) -> board.Board 
     [] -> b
     [head, ..tail] ->
       case head {
-        option.Some(x) -> apply(b, make_mir(x, b)) |> board.mirror_h() |> make_apply(tail)
+        option.Some(x) ->
+          apply(b, make_mir(x, b)) |> board.mirror_h() |> make_apply(tail)
         option.None -> make_apply(b, tail)
       }
   }

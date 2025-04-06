@@ -1,12 +1,15 @@
 import bit_board
 import bit_line
-import gleam/bit_array
 import gleam/dict
 import gleam/list
 import square
 
-type Table =
+pub type Table =
   dict.Dict(square.Square, bit_board.Board)
+
+//All of these are 8 bits
+pub type SlideTable =
+  dict.Dict(#(BitArray, BitArray), BitArray)
 
 pub type Tables {
   Tables(
@@ -14,8 +17,7 @@ pub type Tables {
     pawn_attacks: Table,
     knights: Table,
     kings: Table,
-    sliding: dict.Dict(#(BitArray, BitArray), BitArray),
-    //All of these are 8 bits
+    sliding: SlideTable,
   )
 }
 
@@ -74,7 +76,7 @@ fn gen_knights() -> Table {
     let y = { sq - x } / 8
 
     let rot = fn(xo, yo) {
-      case x + xo > 0 && x + xo < 8 && y + yo > 0 && y + yo < 8 {
+      case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
         True -> fn(x) { bit_board.switch_bit(x, sq + xo + yo * 8) }
         False -> fn(x) { x }
       }
@@ -105,7 +107,7 @@ fn gen_kings() -> Table {
     let y = { sq - x } / 8
 
     let rot = fn(xo, yo) {
-      case x + xo > 0 && x + xo < 8 && y + yo > 0 && y + yo < 8 {
+      case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
         True -> fn(x) { bit_board.switch_bit(x, sq + xo + yo * 8) }
         False -> fn(x) { x }
       }
@@ -159,7 +161,7 @@ fn make_slide(pos: Int, line: BitArray, checking: Int) -> Int {
 }
 
 ///First one is our piece, second one are others
-fn gen_sliding() -> dict.Dict(#(BitArray, BitArray), BitArray) {
+fn gen_sliding() -> SlideTable {
   bit_line.each_array(8, fn(line) {
     bit_line.each_bit(8, fn(arr, pos) {
       #(#(arr, line), <<
