@@ -1,12 +1,29 @@
 import board
+import gleam/dict
 import gleam/io
 import gleam/option
+import gleam/list
 import move
+import square
+import tablegen
 
 // Tables should stay. Instead of using bit_boards, they just use squares/moves directly.
 pub fn main() {
   let assert option.Some(b) =
     board.from_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+  let tables = tablegen.gen_tables()
+
+  let assert Ok(sqs) =
+    dict.get(tables.pawn_attacks, {
+      let assert option.Some(x) = square.from_string("a7")
+      x
+    })
+
+  list.each(sqs, fn(x) {
+    square.to_string(x, False)
+    |> io.println()
+  })
 
   let bb =
     move.apply_list(b, [

@@ -223,11 +223,38 @@ fn r_iter(
   }
 }
 
+fn r_iter_list(
+  b: Board,
+  func: fn(square.Square, Value) -> List(a),
+  collect: List(a),
+  sq: square.Square,
+) -> List(a) {
+  case b {
+    <<v:size(4)-bits, rest:bits>> -> {
+      let assert option.Some(vl) = from_bits(v)
+      r_iter_list(
+        rest,
+        func,
+        list.append(func(sq, vl), collect),
+        sq + 1,
+      )
+    }
+    _ -> collect
+  }
+}
+
 pub fn iter(
   b: Board,
   func: fn(square.Square, Value) -> option.Option(a),
 ) -> List(a) {
   r_iter(b, func, [], 0)
+}
+
+pub fn iter_list(
+  b: Board,
+  func: fn(square.Square, Value) -> List(a),
+) -> List(a) {
+  r_iter_list(b, func, [], 0)
 }
 
 pub fn iter_pieces(

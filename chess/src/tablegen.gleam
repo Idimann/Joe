@@ -1,9 +1,11 @@
 import bit_board
 import gleam/dict
+import gleam/option
+import gleam/list
 import square
 
 pub type Table =
-  dict.Dict(square.Square, bit_board.Board)
+  dict.Dict(square.Square, List(square.Square))
 
 //All of these are 8 bits
 pub type SlideTable =
@@ -19,114 +21,93 @@ pub type Tables {
   )
 }
 
-// fn gen_pawns() -> Table {
-//   let new = bit_board.new()
-//
-//   bit_board.iterate_collect(bit_board.new_filled(), fn(_, sq) {
-//     let y = { sq - sq % 8 } / 8
-//
-//     #(
-//       sq,
-//       new
-//         |> case y {
-//           7 -> fn(x) { x }
-//           1 -> fn(x) {
-//             bit_board.switch_bit(x, sq + 8) |> bit_board.switch_bit(sq + 16)
-//           }
-//           _ -> fn(x) { bit_board.switch_bit(x, sq + 8) }
-//         },
-//     )
-//   })
-//   |> dict.from_list()
-// }
-//
-// fn gen_pawn_attacks() -> Table {
-//   let new = bit_board.new()
-//
-//   bit_board.iterate_collect(bit_board.new_filled(), fn(_, sq) {
-//     let x = sq % 8
-//     let y = { sq - x } / 8
-//
-//     #(
-//       sq,
-//       new
-//         |> case y {
-//           7 -> fn(x) { x }
-//           _ ->
-//             case x {
-//               0 -> fn(x) { bit_board.switch_bit(x, sq + 9) }
-//               7 -> fn(x) { bit_board.switch_bit(x, sq + 7) }
-//               _ -> fn(x) {
-//                 bit_board.switch_bit(x, sq + 9) |> bit_board.switch_bit(sq + 7)
-//               }
-//             }
-//         },
-//     )
-//   })
-//   |> dict.from_list()
-// }
-//
-// fn gen_knights() -> Table {
-//   let new = bit_board.new()
-//
-//   bit_board.iterate_collect(bit_board.new_filled(), fn(_, sq) {
-//     let x = sq % 8
-//     let y = { sq - x } / 8
-//
-//     let rot = fn(xo, yo) {
-//       case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
-//         True -> fn(x) { bit_board.switch_bit(x, sq + xo + yo * 8) }
-//         False -> fn(x) { x }
-//       }
-//     }
-//
-//     #(
-//       sq,
-//       new
-//         //Top left clockwise
-//         |> rot(-1, 2)
-//         |> rot(1, 2)
-//         |> rot(2, 1)
-//         |> rot(2, -1)
-//         |> rot(1, -2)
-//         |> rot(-1, -2)
-//         |> rot(-2, -1)
-//         |> rot(-2, 1),
-//     )
-//   })
-//   |> dict.from_list()
-// }
-//
-// fn gen_kings() -> Table {
-//   let new = bit_board.new()
-//
-//   bit_board.iterate_collect(bit_board.new_filled(), fn(_, sq) {
-//     let x = sq % 8
-//     let y = { sq - x } / 8
-//
-//     let rot = fn(xo, yo) {
-//       case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
-//         True -> fn(x) { bit_board.switch_bit(x, sq + xo + yo * 8) }
-//         False -> fn(x) { x }
-//       }
-//     }
-//
-//     #(
-//       sq,
-//       new
-//         //Top left clockwise
-//         |> rot(-1, 1)
-//         |> rot(-1, 0)
-//         |> rot(-1, -1)
-//         |> rot(1, 1)
-//         |> rot(1, 0)
-//         |> rot(1, -1)
-//         |> rot(0, -1)
-//         |> rot(0, 1),
-//     )
-//   })
-//   |> dict.from_list()
-// }
+fn gen_pawns() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let y = { sq - sq % 8 } / 8
+
+    option.Some(
+      #(sq, case y {
+        7 -> []
+        1 -> [sq + 8, sq + 16]
+        _ -> [sq + 8]
+      }),
+    )
+  })
+  |> dict.from_list()
+}
+
+fn gen_pawn_attacks() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+
+    option.Some(
+      #(sq, case x {
+        0 -> [sq + 9]
+        7 -> [sq + 7]
+        _ -> [sq + 9, sq + 7]
+      }),
+    )
+  })
+  |> dict.from_list()
+}
+
+fn gen_knights() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+    let y = { sq - x } / 8
+
+    let rot = fn(l, xo, yo) {
+      case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
+        True -> list.prepend(l, sq + xo + yo * 8)
+        False -> l
+      }
+    }
+
+    option.Some(#(
+      sq,
+      []
+        //Top left clockwise
+        |> rot(-1, 2)
+        |> rot(1, 2)
+        |> rot(2, 1)
+        |> rot(2, -1)
+        |> rot(1, -2)
+        |> rot(-1, -2)
+        |> rot(-2, -1)
+        |> rot(-2, 1),
+    ))
+  })
+  |> dict.from_list()
+}
+
+fn gen_kings() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+    let y = { sq - x } / 8
+
+    let rot = fn(l, xo, yo) {
+      case x + xo >= 0 && x + xo < 8 && y + yo >= 0 && y + yo < 8 {
+        True -> list.prepend(l, sq + xo + yo * 8)
+        False -> l
+      }
+    }
+
+    option.Some(#(
+      sq,
+      []
+        //Top left clockwise
+        |> rot(-1, 1)
+        |> rot(-1, 0)
+        |> rot(-1, -1)
+        |> rot(1, 1)
+        |> rot(1, 0)
+        |> rot(1, -1)
+        |> rot(0, -1)
+        |> rot(0, 1),
+    ))
+  })
+  |> dict.from_list()
+}
 //
 // fn gen_combi(size: Int) -> List(BitArray) {
 //   case size {
@@ -178,12 +159,12 @@ pub type Tables {
 //   |> dict.from_list()
 // }
 //
-// pub fn gen_tables() -> Tables {
-//   Tables(
-//     pawns: gen_pawns(),
-//     pawn_attacks: gen_pawn_attacks(),
-//     knights: gen_knights(),
-//     kings: gen_kings(),
-//     sliding: gen_sliding(),
-//   )
-// }
+pub fn gen_tables() -> Tables {
+  Tables(
+    pawns: gen_pawns(),
+    pawn_attacks: gen_pawn_attacks(),
+    knights: gen_knights(),
+    kings: gen_kings(),
+    sliding: dict.new(), //gen_sliding(),
+  )
+}
