@@ -135,6 +135,7 @@ pub fn from_fen(fen: String) -> option.Option(Board) {
 
 fn r_pretty(b: Board, s: square.Square) -> String {
   bit_board.get(b.board, s) |> bit_board.value_to_string(b.white)
+  <> " "
   <> case s % 8 == 7 {
     True -> "\n"
     False -> ""
@@ -162,5 +163,14 @@ pub fn mirror(b: Board) -> Board {
       let assert <<ok:1-bits, oq:1-bits, tk:1-bits, tq:1-bits>> = b.castling
       <<tk:bits, tq:bits, ok:bits, oq:bits>>
     },
+  )
+}
+
+pub fn mirror_h(b: Board) -> Board {
+  Board(
+    board: bit_board.mirror_h(b.board),
+    white: b.white,
+    mirror: !b.mirror,
+    castling: b.castling,
   )
 }

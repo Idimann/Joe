@@ -363,3 +363,63 @@ pub fn move_piece(b: Board, f: square.Square, t: square.Square) -> Board {
 
   b |> set(f, Empty) |> set(t, x)
 }
+
+fn remove_en_passant_line(l: BitArray) -> BitArray {
+  let sq = 4
+
+  let func = fn(x) {
+    let assert option.Some(y) = from_bits(x)
+    case y {
+      EnPassant -> to_bits(Empty)
+      _ -> to_bits(y)
+    }
+  }
+
+  let assert <<
+    v0:size(sq)-bits,
+    v1:size(sq)-bits,
+    v2:size(sq)-bits,
+    v3:size(sq)-bits,
+    v4:size(sq)-bits,
+    v5:size(sq)-bits,
+    v6:size(sq)-bits,
+    v7:size(sq)-bits,
+  >> = l
+
+  <<
+    func(v0):bits,
+    func(v1):bits,
+    func(v2):bits,
+    func(v3):bits,
+    func(v4):bits,
+    func(v5):bits,
+    func(v6):bits,
+    func(v7):bits,
+  >>
+}
+
+pub fn remove_en_passant(b: Board) -> Board {
+  let line = 4 * 8
+
+  let assert <<
+    v0:size(line)-bits,
+    v1:size(line)-bits,
+    v2:size(line)-bits,
+    v3:size(line)-bits,
+    v4:size(line)-bits,
+    v5:size(line)-bits,
+    v6:size(line)-bits,
+    v7:size(line)-bits,
+  >> = b
+
+  <<
+    v0:bits,
+    v1:bits,
+    v2:bits,
+    v3:bits,
+    v4:bits,
+    remove_en_passant_line(v5):bits, //We only have to do this on v5
+    v6:bits,
+    v7:bits,
+  >>
+}

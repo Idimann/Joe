@@ -79,6 +79,7 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         board: b.board
           |> bit_board.move_piece(f, t)
           //Setting en passant
+          |> bit_board.remove_en_passant()
           |> case x {
             bit_board.Pawn(_) if t == f + 16 -> fn(x) {
               bit_board.set(x, f + 8, bit_board.EnPassant)
@@ -120,24 +121,28 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         board: b.board
           //Moving the rook
           |> bit_board.move_piece(
-            case ty, b.white != b.mirror {
-              Kingside, True | Queenside, False -> 7
-              Kingside, False | Queenside, True -> 0
+            case ty, b.mirror {
+              Kingside, False | Queenside, True -> 7
+              Kingside, True | Queenside, False -> 0
             },
-            case ty, b.white != b.mirror {
-              Kingside, True | Queenside, False -> 5
-              Kingside, False | Queenside, True -> 3
+            case ty, b.mirror {
+              Kingside, False -> 5
+              Queenside, False -> 3
+              Kingside, True -> 2
+              Queenside, True -> 4
             },
           )
           //Moving the king
           |> bit_board.move_piece(
-            case b.white != b.mirror {
-              True -> 4
-              False -> 3
+            case b.mirror {
+              True -> 3
+              False -> 4
             },
-            case ty, b.white != b.mirror {
-              Kingside, True | Queenside, False -> 6
-              Kingside, False | Queenside, True -> 2
+            case ty, b.mirror {
+              Kingside, False -> 6
+              Queenside, False -> 2
+              Kingside, True -> 1
+              Queenside, True -> 5
             },
           ),
         white: b.white,
@@ -177,4 +182,49 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         castling: b.castling,
       )
   })
+}
+
+pub fn mirror(m: Move) -> Move {
+  case m {
+    Normal(f, t) -> Normal(square.mirror(f), square.mirror(t))
+    Castle(ty) -> Castle(ty)
+    EnPassant(f) -> EnPassant(square.mirror(f))
+    Promotion(f, t, ty) -> Promotion(square.mirror(f), square.mirror(t), ty)
+  }
+}
+
+pub fn mirror_h(m: Move) -> Move {
+  case m {
+    Normal(f, t) -> Normal(square.mirror_h(f), square.mirror_h(t))
+    Castle(ty) -> Castle(ty)
+    EnPassant(f) -> EnPassant(square.mirror_h(f))
+    Promotion(f, t, ty) -> Promotion(square.mirror_h(f), square.mirror_h(t), ty)
+  }
+}
+
+pub fn apply_list(b: board.Board, l: List(option.Option(Move))) -> board.Board {
+  case l {
+    [] -> b
+    [head, ..tail] ->
+      apply_list(
+        case head {
+          option.Some(x) ->
+            apply(
+              b,
+              x
+                |> case b.white {
+                  True -> fn(x) { x }
+                  False -> fn(x) { mirror(x) }
+                }
+                |> case b.mirror {
+                  True -> fn(x) { mirror_h(x) }
+                  False -> fn(x) { x }
+                },
+            )
+            |> board.mirror_h()
+          option.None -> b
+        },
+        tail,
+      )
+  }
 }
