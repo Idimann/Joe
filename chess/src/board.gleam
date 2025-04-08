@@ -45,17 +45,13 @@ fn from_fen_main(b: Board, i: List(String), s: square.Square) -> Board {
         case head {
           "/" ->
             case s % 8 {
-              0 -> s
-              _ -> s - { s % 8 } - 8
+              0 -> s - 16
+              x -> s - x - 8
             }
           x ->
             case int.parse(x) {
-              Ok(n) -> s + n - 1
-              Error(_) ->
-                case s % 8 {
-                  7 -> s - 15
-                  _ -> s + 1
-                }
+              Ok(n) -> s + n
+              Error(_) -> s + 1
             }
         },
       )

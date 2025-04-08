@@ -232,12 +232,7 @@ fn r_iter_list(
   case b {
     <<v:size(4)-bits, rest:bits>> -> {
       let assert option.Some(vl) = from_bits(v)
-      r_iter_list(
-        rest,
-        func,
-        list.append(func(sq, vl), collect),
-        sq + 1,
-      )
+      r_iter_list(rest, func, list.append(func(sq, vl), collect), sq + 1)
     }
     _ -> collect
   }
@@ -250,23 +245,20 @@ pub fn iter(
   r_iter(b, func, [], 0)
 }
 
-pub fn iter_list(
-  b: Board,
-  func: fn(square.Square, Value) -> List(a),
-) -> List(a) {
+pub fn iter_list(b: Board, func: fn(square.Square, Value) -> List(a)) -> List(a) {
   r_iter_list(b, func, [], 0)
 }
 
 pub fn iter_pieces(
   b: Board,
-  func: fn(square.Square, Value) -> option.Option(a),
+  func: fn(square.Square, Value) -> List(a),
 ) -> List(a) {
-  r_iter(
+  r_iter_list(
     b,
     fn(sq, v) {
       case v {
-        Empty -> option.None
-        EnPassant -> option.None
+        Empty -> []
+        EnPassant -> []
         _ -> func(sq, v)
       }
     },
@@ -445,7 +437,8 @@ pub fn remove_en_passant(b: Board) -> Board {
     v2:bits,
     v3:bits,
     v4:bits,
-    remove_en_passant_line(v5):bits, //We only have to do this on v5
+    remove_en_passant_line(v5):bits,
+    //We only have to do this on v5
     v6:bits,
     v7:bits,
   >>
