@@ -2,14 +2,12 @@ import board
 import gleam/io
 import gleam/list
 import gleam/option
+import gleam/dict
 import move
+import square
 import movegen
 import tablegen
 
-// Slide tables as they are right now are dumb.
-// You should use tables of rows, lines and diagonals instead
-// We don't need these move tables. They are only efficient if you can use and and or
-// operations.
 pub fn main() {
   let tables = tablegen.gen_tables()
 
@@ -18,6 +16,13 @@ pub fn main() {
 
   movegen.gen_simple(b, tables)
   |> list.each(fn(x) { move.to_string(x, False) |> io.println() })
+
+  //diag works, o_diag doesn't. Rows and cols haven't been tested at all!!
+  let assert option.Some(sq) = square.from_string("e4")
+  let assert Ok(sqs) = dict.get(tables.o_diag, sq)
+  sqs
+  |> list.map(fn(x) { square.to_string(x, False) })
+  |> list.each(io.println)
 
   b |> board.pretty() |> io.println()
 }

@@ -1,5 +1,6 @@
 import bit_board
 import gleam/dict
+import gleam/int
 import gleam/list
 import gleam/option
 import square
@@ -7,17 +8,16 @@ import square
 pub type Table =
   dict.Dict(square.Square, List(square.Square))
 
-//All of these are 8 bits
-pub type SlideTable =
-  dict.Dict(#(Int, BitArray), BitArray)
-
 pub type Tables {
   Tables(
     pawns: Table,
     pawn_attacks: Table,
     knights: Table,
     kings: Table,
-    sliding: SlideTable,
+    rows: Table,
+    cols: Table,
+    diag: Table,
+    o_diag: Table,
   )
 }
 
@@ -139,30 +139,58 @@ fn make_slide(pos: Int, line: BitArray, checking: Int) -> Int {
   }
 }
 
-fn gen_sliding() -> SlideTable {
-  let lines = list.range(0, 127)
+fn gen_rows() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let y = sq - sq % 8
 
-  list.range(0, 7)
-  |> list.map(fn(pos) {
-    let n_size = 7 - pos
-
-    list.map(lines, fn(ln) {
-      let assert <<0:1, p:size(pos)-bits, n:size(n_size)-bits>> = <<ln:int>>
-      let line = <<p:bits, 0:1, n:bits>>
-
-      #(#(pos, line), <<
-        make_slide(pos, line, 0):1,
-        make_slide(pos, line, 1):1,
-        make_slide(pos, line, 2):1,
-        make_slide(pos, line, 3):1,
-        make_slide(pos, line, 4):1,
-        make_slide(pos, line, 5):1,
-        make_slide(pos, line, 6):1,
-        make_slide(pos, line, 7):1,
-      >>)
-    })
+    option.Some(#(sq, list.range(0, 7) |> list.map(fn(p) { y + p })))
   })
-  |> list.flatten()
+  |> dict.from_list()
+}
+
+fn gen_cols() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+
+    option.Some(#(sq, list.range(0, 7) |> list.map(fn(p) { p * 8 + x })))
+  })
+  |> dict.from_list()
+}
+
+fn gen_diag() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+    let y = { sq - x } / 8
+
+    let mini = int.min(x, y)
+    let start = { x - mini } + { y - mini } * 8
+    let size = 8 - int.max(x, y) + mini
+
+    option.Some(#(
+      sq,
+      //9 is correct
+      list.range(0, size - 1) |> list.map(fn(p) { start + p * 9 }),
+    ))
+  })
+  |> dict.from_list()
+}
+
+///This is bugged
+fn gen_o_diag() -> Table {
+  bit_board.iter(bit_board.new(), fn(sq, _) {
+    let x = sq % 8
+    let y = { sq - x } / 8
+
+    let mini = int.min(x, y)
+    let start = { x - mini } + { y - mini } * 8
+    let size = 8 - int.max(x, y) + mini
+
+    option.Some(#(
+      sq,
+      //9 is correct
+      list.range(0, size - 1) |> list.map(fn(p) { start + p * 9 }),
+    ))
+  })
   |> dict.from_list()
 }
 
@@ -172,6 +200,9 @@ pub fn gen_tables() -> Tables {
     pawn_attacks: gen_pawn_attacks(),
     knights: gen_knights(),
     kings: gen_kings(),
-    sliding: gen_sliding(),
+    rows: gen_rows(),
+    cols: gen_cols(),
+    diag: gen_diag(),
+    o_diag: gen_o_diag(),
   )
 }

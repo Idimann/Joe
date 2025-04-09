@@ -133,45 +133,45 @@ fn get_line(
   }
 }
 
-pub fn gen_rook(
-  b: board.Board,
-  s: square.Square,
-  t: tablegen.SlideTable,
-) -> List(move.Move) {
-  let line_start = s - { s % 8 }
-
-  let line = <<
-    get_line(b.board, s, line_start, True, 1).1:bits,
-    0:1,
-    get_line(b.board, s, line_start + 7, False, 1).1:bits,
-  >>
-
-  let assert Ok(ln) = dict.get(t, #(s - line_start, line))
-
-  // ln
-  // |> list.filter(fn(sq) {
-  //   case bit_board.get(b.board, sq) {
-  //     bit_board.Empty
-  //     | bit_board.EnPassant
-  //     | bit_board.Pawn(True)
-  //     | bit_board.Knight(True)
-  //     | bit_board.Bishop(True)
-  //     | bit_board.Rook(True)
-  //     | bit_board.Queen(True) -> True
-  //     _ -> False
-  //   }
-  // })
-  // |> list.map(fn(sq) { move.Normal(s, sq) })
-
-  []
-}
+// pub fn gen_rook(
+//   b: board.Board,
+//   s: square.Square,
+//   t: tablegen.Table,
+// ) -> List(move.Move) {
+//   let line_start = s - { s % 8 }
+//
+//   let line = <<
+//     get_line(b.board, s, line_start, True, 1).1:bits,
+//     0:1,
+//     get_line(b.board, s, line_start + 7, False, 1).1:bits,
+//   >>
+//
+//   let assert Ok(ln) = dict.get(t, #(s - line_start, line))
+//
+//   // ln
+//   // |> list.filter(fn(sq) {
+//   //   case bit_board.get(b.board, sq) {
+//   //     bit_board.Empty
+//   //     | bit_board.EnPassant
+//   //     | bit_board.Pawn(True)
+//   //     | bit_board.Knight(True)
+//   //     | bit_board.Bishop(True)
+//   //     | bit_board.Rook(True)
+//   //     | bit_board.Queen(True) -> True
+//   //     _ -> False
+//   //   }
+//   // })
+//   // |> list.map(fn(sq) { move.Normal(s, sq) })
+//
+//   []
+// }
 
 pub fn gen_simple(b: board.Board, t: tablegen.Tables) -> List(move.Move) {
   bit_board.iter_pieces(b.board, fn(sq, vl) {
     case vl {
       bit_board.Pawn(False) -> gen_pawn(b, sq, t.pawns, t.pawn_attacks)
       bit_board.Knight(False) -> gen_knight_king(b, sq, t.knights)
-      bit_board.Rook(False) -> gen_rook(b, sq, t.sliding)
+      // bit_board.Rook(False) -> gen_rook(b, sq, t.sliding)
       bit_board.King(False) -> gen_knight_king(b, sq, t.kings)
       _ -> []
     }
