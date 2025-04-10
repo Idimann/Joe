@@ -1,7 +1,6 @@
 import bit_board
 import board
 import gleam/dict
-import gleam/bit_array
 import gleam/int
 import gleam/io
 import gleam/list
@@ -291,65 +290,73 @@ pub fn under_attack(
 pub fn gen(
   b: board.Board,
   t: tablegen.Tables,
-) -> List(#(move.Move, board.Board)) {
+) -> #(List(#(move.Move, board.Board)), Bool) {
+  let king =
+    under_attack(b, t, case b.mirror {
+      False -> 4
+      True -> 3
+    })
   let castle_k = case b.mirror {
-    False -> #([5, 6], [4, 5])
-    True -> #([2, 1], [3, 2])
+    False -> #([5, 6], 5)
+    True -> #([2, 1], 2)
   }
   let castle_q = case b.mirror {
-    False -> #([3, 2, 1], [4, 3])
-    True -> #([4, 5, 6], [5, 6])
+    False -> #([3, 2, 1], 3)
+    True -> #([4, 5, 6], 4)
   }
 
-  gen_pseudo(b, t)
-  |> list.map(fn(m) { #(m, move.apply(b, m)) })
-  |> case b.castling {
-    <<1:1, _:bits>> -> fn(x) {
-      case
-        list.all(castle_k.0, fn(y) {
-          case bit_board.get(b.board, y) {
-            bit_board.Empty | bit_board.EnPassant -> True
-            _ -> False
-          }
-        })
-      {
-        True ->
-          case list.all(castle_k.1, fn(y) { !under_attack(b, t, y) }) {
-            True -> {
-              let m = move.Castle(move.Kingside)
-              list.prepend(x, #(m, move.apply(b, m)))
-            }
+  #(
+    gen_pseudo(b, t)
+      |> list.map(fn(m) { #(m, move.apply(b, m)) })
+      |> case b.castling {
+        <<1:1, _:bits>> -> fn(x) {
+          case
+            list.all(castle_k.0, fn(y) {
+              case bit_board.get(b.board, y) {
+                bit_board.Empty | bit_board.EnPassant -> True
+                _ -> False
+              }
+            })
+          {
+            True ->
+              case under_attack(b, t, castle_k.1) {
+                False -> {
+                  let m = move.Castle(move.Kingside)
+                  list.prepend(x, #(m, move.apply(b, m)))
+                }
+                True -> x
+              }
             False -> x
           }
-        False -> x
+        }
+        _ -> fn(x) { x }
       }
-    }
-    _ -> fn(x) { x }
-  }
-  |> case b.castling {
-    <<_:1, 1:1, _:bits>> -> fn(x) {
-      case
-        list.all(castle_q.0, fn(y) {
-          case bit_board.get(b.board, y) {
-            bit_board.Empty | bit_board.EnPassant -> True
-            _ -> False
-          }
-        })
-      {
-        True ->
-          case list.all(castle_q.1, fn(y) { !under_attack(b, t, y) }) {
-            True -> {
-              let m = move.Castle(move.Queenside)
-              list.prepend(x, #(m, move.apply(b, m)))
-            }
+      |> case b.castling {
+        <<_:1, 1:1, _:bits>> -> fn(x) {
+          case
+            list.all(castle_q.0, fn(y) {
+              case bit_board.get(b.board, y) {
+                bit_board.Empty | bit_board.EnPassant -> True
+                _ -> False
+              }
+            })
+          {
+            True ->
+              case under_attack(b, t, castle_q.1) {
+                False -> {
+                  let m = move.Castle(move.Queenside)
+                  list.prepend(x, #(m, move.apply(b, m)))
+                }
+                True -> x
+              }
             False -> x
           }
-        False -> x
+        }
+        _ -> fn(x) { x }
       }
-    }
-    _ -> fn(x) { x }
-  }
-  |> list.filter(fn(x) { !in_check(x.1, t) })
+      |> list.filter(fn(x) { !in_check(x.1, t) }),
+    king,
+  )
 }
 
 pub fn perft(b: board.Board, t: tablegen.Tables, n: Int) -> Int {
@@ -357,7 +364,7 @@ pub fn perft(b: board.Board, t: tablegen.Tables, n: Int) -> Int {
     0 -> 1
     _ ->
       case
-        gen(b, t)
+        gen(b, t).0
         |> list.map(fn(p) { perft(p.1, t, n - 1) })
         |> list.reduce(fn(acc, x) { acc + x })
       {
@@ -369,7 +376,7 @@ pub fn perft(b: board.Board, t: tablegen.Tables, n: Int) -> Int {
 
 pub fn perft_print(b: board.Board, t: tablegen.Tables, n: Int) {
   let pe =
-    gen(b, t)
+    gen(b, t).0
     |> list.map(fn(x) { #(x.0, perft(x.1, t, n - 1)) })
 
   pe

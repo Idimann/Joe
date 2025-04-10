@@ -45,16 +45,40 @@ pub fn to_string(m: Move, mir: Bool) -> String {
   }
 }
 
-pub fn normal(f: String, t: String) -> option.Option(Move) {
+pub fn normal(f: String, t: String, wh: Bool, mir: Bool) -> option.Option(Move) {
+  let func = fn(x) {
+    x
+    |> case wh {
+      True -> fn(x) { x }
+      False -> square.mirror
+    }
+    |> case mir {
+      True -> square.mirror_h
+      False -> fn(x) { x }
+    }
+  }
+
   case square.from_string(f), square.from_string(t) {
-    option.Some(f), option.Some(t) -> option.Some(Normal(f, t))
+    option.Some(f), option.Some(t) -> option.Some(Normal(func(f), func(t)))
     _, _ -> option.None
   }
 }
 
-pub fn en_passant(f: String) -> option.Option(Move) {
+pub fn en_passant(f: String, wh: Bool, mir: Bool) -> option.Option(Move) {
+  let func = fn(x) {
+    x
+    |> case wh {
+      True -> fn(x) { x }
+      False -> square.mirror
+    }
+    |> case mir {
+      True -> square.mirror_h
+      False -> fn(x) { x }
+    }
+  }
+
   case square.from_string(f) {
-    option.Some(f) -> option.Some(EnPassant(f))
+    option.Some(f) -> option.Some(EnPassant(func(f)))
     _ -> option.None
   }
 }
@@ -63,9 +87,27 @@ pub fn castle(x: CastleType) -> option.Option(Move) {
   option.Some(Castle(x))
 }
 
-pub fn promotion(f: String, t: String, x: PromType) -> option.Option(Move) {
+pub fn promotion(
+  f: String,
+  t: String,
+  x: PromType,
+  wh: Bool,
+  mir: Bool,
+) -> option.Option(Move) {
+  let func = fn(x) {
+    x
+    |> case wh {
+      True -> fn(x) { x }
+      False -> square.mirror
+    }
+    |> case mir {
+      True -> square.mirror_h
+      False -> fn(x) { x }
+    }
+  }
+
   case square.from_string(f), square.from_string(t) {
-    option.Some(f), option.Some(t) -> option.Some(Promotion(f, t, x))
+    option.Some(f), option.Some(t) -> option.Some(Promotion(func(f), func(t), x))
     _, _ -> option.None
   }
 }
