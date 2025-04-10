@@ -267,6 +267,20 @@ pub fn iter_pieces(
   )
 }
 
+fn r_find_king(b: Board, s: square.Square) -> square.Square {
+  let assert <<v:size(4)-bits, rest:bits>> = b
+  let assert option.Some(vl) = from_bits(v)
+
+  case vl {
+    King(True) -> s
+    _ -> r_find_king(rest, s + 1)
+  }
+}
+
+pub fn find_king(b: Board) -> square.Square {
+  r_find_king(b, 0)
+}
+
 fn mirror_square(i: BitArray) -> BitArray {
   let assert option.Some(v) = from_bits(i)
 
@@ -419,27 +433,15 @@ fn remove_en_passant_line(l: BitArray) -> BitArray {
 
 pub fn remove_en_passant(b: Board) -> Board {
   let line = 4 * 8
+  let ps = line * 5
+  let ns = line * 2
 
-  let assert <<
-    v0:size(line)-bits,
-    v1:size(line)-bits,
-    v2:size(line)-bits,
-    v3:size(line)-bits,
-    v4:size(line)-bits,
-    v5:size(line)-bits,
-    v6:size(line)-bits,
-    v7:size(line)-bits,
-  >> = b
+  let assert <<p:size(ps)-bits, l5:size(line)-bits, n:size(ns)-bits>> = b
 
   <<
-    v0:bits,
-    v1:bits,
-    v2:bits,
-    v3:bits,
-    v4:bits,
-    remove_en_passant_line(v5):bits,
+    p:bits,
     //We only have to do this on v5
-    v6:bits,
-    v7:bits,
+    remove_en_passant_line(l5):bits,
+    n:bits,
   >>
 }

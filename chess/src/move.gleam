@@ -90,15 +90,14 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
         mirror: b.mirror,
         castling: case x {
           bit_board.King(_) -> {
-            let assert <<_:2-bits, tk:1-bits, tq:1-bits>> = b.castling
-            <<0:2, tk:bits, tq:bits>>
+            let assert <<_:2-bits, t:2-bits>> = b.castling
+            <<0:2, t:bits>>
           }
           bit_board.Rook(_) -> {
             //Magic
-            let kingside = { f == 0 } == { b.white != b.mirror }
+            let kingside = { f == 7 } == { b.white != b.mirror }
 
-            let assert <<ok:1-bits, oq:1-bits, tk:1-bits, tq:1-bits>> =
-              b.castling
+            let assert <<ok:1-bits, oq:1-bits, t:2-bits>> = b.castling
             <<
               case kingside {
                 True -> <<0:1>>
@@ -108,8 +107,7 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
                 True -> oq
                 False -> <<0:1>>
               }:bits,
-              tk:bits,
-              tq:bits,
+              t:bits,
             >>
           }
           _ -> b.castling
@@ -144,21 +142,29 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
               Kingside, True -> 1
               Queenside, True -> 5
             },
-          ),
+          )
+          |> bit_board.remove_en_passant(),
         white: b.white,
         mirror: b.mirror,
-        castling: <<0:4>>,
+        castling: {
+          let assert <<_:2, t:2-bits>> = b.castling
+          <<0:2, t:bits>>
+        },
       )
     EnPassant(f) ->
       board.Board(
         board: b.board
           //We can do this cause we can be sure that f is not at the end of the board
           |> case bit_board.get(b.board, f + 7) {
-            bit_board.EnPassant -> fn(x) { bit_board.move_piece(x, f, f + 7) }
+            bit_board.EnPassant -> fn(x) {
+              bit_board.move_piece(x, f, f + 7)
+              |> bit_board.set(f - 1, bit_board.Empty)
+            }
             _ ->
               case bit_board.get(b.board, f + 9) {
                 bit_board.EnPassant -> fn(x) {
                   bit_board.move_piece(x, f, f + 9)
+                  |> bit_board.set(f + 1, bit_board.Empty)
                 }
                 _ -> fn(x) { x }
               }
@@ -170,6 +176,7 @@ pub fn apply(b: board.Board, m: Move) -> board.Board {
     Promotion(f, t, ty) ->
       board.Board(
         board: b.board
+          |> bit_board.remove_en_passant()
           |> bit_board.set(f, bit_board.Empty)
           |> bit_board.set(t, case ty {
             Knight -> bit_board.Knight(False)

@@ -156,8 +156,8 @@ pub fn mirror(b: Board) -> Board {
     white: !b.white,
     mirror: b.mirror,
     castling: {
-      let assert <<ok:1-bits, oq:1-bits, tk:1-bits, tq:1-bits>> = b.castling
-      <<tk:bits, tq:bits, ok:bits, oq:bits>>
+      let assert <<o:2-bits, t:2-bits>> = b.castling
+      <<t:bits, o:bits>>
     },
   )
 }
