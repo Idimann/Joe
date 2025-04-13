@@ -58,7 +58,7 @@ pub fn simple_game(b: board.Board, tables: tablegen.Tables, player: Bool) {
         Error(_) -> simple_game(b, tables, player)
       }
     False -> {
-      let pl = search.alpha_beta(b, tables, 5)
+      let pl = search.alpha_beta(b, tables, 3)
       io.println("Winning chance: " <> float.to_string(pl.0))
 
       simple_game(pl.2 |> board.mirror_h(), tables, player)

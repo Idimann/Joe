@@ -74,9 +74,9 @@ pub fn mcts(
             list.range(1, n)
             |> list.map(fn(_) {
               case mcts_do(pos.1, [b], t, b.white, 0).0 {
-                Win -> 1.0
-                Draw -> 0.5
-                Loss -> 0.0
+                Win -> max_val
+                Draw -> 0.0
+                Loss -> 0.0 -. max_val
               }
             })
 
@@ -90,7 +90,7 @@ pub fn mcts(
     |> list.map(fn(x) { #(task.await_forever(x.0), x.1, x.2) })
     |> list.max(fn(x, y) { float.compare(x.0, y.0) })
 
-  ret
+  #({ ret.0 +. max_val } /. { 2.0 *. max_val }, ret.1, ret.2)
 }
 
 fn max_break(
@@ -105,7 +105,12 @@ fn max_break(
     [head, ..tail] -> {
       let val = func(head, cur)
       case float.compare(val, cut) {
-        order.Eq -> cur
+        order.Eq -> {
+          case float.compare(val, cur) == order {
+            True -> val
+            False -> cur
+          }
+        }
         od ->
           case od == order {
             True -> cur
@@ -142,10 +147,10 @@ fn alpha_beta_do(
               case v {
                 True ->
                   case b.white == side {
-                    True -> 0.0
-                    False -> 1.0
+                    True -> 0.0 -. max_val
+                    False -> max_val
                   }
-                False -> 0.5
+                False -> 0.0
               }
             #(ls, _) ->
               case b.white == side {
@@ -192,7 +197,7 @@ fn alpha_beta_do(
   }
 }
 
-const max_val: Float = 1000.0
+const max_val: Float = 100000.0
 
 pub fn alpha_beta(
   b: board.Board,
@@ -220,5 +225,5 @@ pub fn alpha_beta(
     |> list.map(fn(x) { #(task.await_forever(x.0), x.1, x.2) })
     |> list.max(fn(x, y) { float.compare(x.0, y.0) })
 
-  ret
+  #({ ret.0 +. max_val } /. { 2.0 *. max_val }, ret.1, ret.2)
 }
